@@ -6,10 +6,10 @@
 // Condition: issue.issueType.id == 10066
 // ------------------------------------------------------------------------------------------------------------------------
 // Fields updated:
-// * Request Type (customfield_10010) - LogicMonitor Alert (450)
+// * Request Type (customfield_10010)
 // * Customer (customfield_10078)
 // * Device (customfield_10083)
-// * Team Responsible (customfield_10101) - MS NOC (58158)
+// * Team Responsible (customfield_10101)
 // * Priority (priority)
 // ------------------------------------------------------------------------------------------------------------------------
 
@@ -69,7 +69,7 @@ def getLMAlert(x) {
 
     def accessId = ACCESSID;
     def accessKey = ACCESSKEY;
-    def account = 'jenzabar';
+    def account = 'contoso';
 
     resourcePath = "/alert/alerts"
     url = "https://" + account + ".logicmonitor.com" + "/santaba/rest" + resourcePath;
@@ -124,9 +124,9 @@ def priorityId = priorityMap.find {it.opsgeniePriority == opsgenieAlert.priority
 // Posting Request Type and Priority data to Jira issue
 String issueData = """ {
         "fields": {
-            "customfield_10010":"450",
-			"priority":{"id":"${priorityId}"},
-            "labels": ["O2J", "fromOG", "Link"]
+		"customfield_10010":"450",
+		"priority":{"id":"${priorityId}"},
+		"labels": ["O2J", "fromOG", "Link"]
         }
     } """
 
@@ -195,14 +195,14 @@ try {
     customerAssetId = serverAsset.attributes.find {it.objectTypeAttributeId == "2793"}.objectAttributeValues.referencedObject.id[0]
 } catch (Exception){
     def clientPattern = ~/JZ(.*)-/
-    def jenzabarPattern = ~/jenzmgs.local/
+    def contosoPattern = ~/contoso.local/
     def serverName = (serverAsset.attributes.find {it.objectTypeAttributeId == "2637"}.objectAttributeValues.value[0]).toString()
     
     if (serverName =~ clientPattern) {
         def customerCode = (serverName =~ clientPattern)[0][1].toString()
         customerAssetId = insQuery("objectType = Organization AND Code = ${customerCode}").objectEntries.id[0]
-    } else if (serverName =~ jenzabarPattern){
-        customerAssetId = insQuery("objectType = Organization AND Name = Jenzabar").objectEntries.id[0]
+    } else if (serverName =~ contosoPattern){
+        customerAssetId = insQuery("objectType = Organization AND Name = contoso").objectEntries.id[0]
     }
 }
 
