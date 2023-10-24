@@ -9,7 +9,7 @@
 // * Request Type (customfield_10010) - LogicMonitor Alert (450)
 // * Customer (customfield_10078)
 // * Device (customfield_10083)
-// * Team Responsible (customfield_10101) - Gold Team (58158)
+// * Team Responsible (customfield_10101) - MS NOC (58158)
 // * Priority (priority)
 // ------------------------------------------------------------------------------------------------------------------------
 
@@ -69,7 +69,7 @@ def getLMAlert(x) {
 
     def accessId = ACCESSID;
     def accessKey = ACCESSKEY;
-    def account = 'CONTOSO';
+    def account = 'jenzabar';
 
     resourcePath = "/alert/alerts"
     url = "https://" + account + ".logicmonitor.com" + "/santaba/rest" + resourcePath;
@@ -125,7 +125,8 @@ def priorityId = priorityMap.find {it.opsgeniePriority == opsgenieAlert.priority
 String issueData = """ {
         "fields": {
             "customfield_10010":"450",
-			      "priority":{"id":"${priorityId}"}
+			"priority":{"id":"${priorityId}"},
+            "labels": ["O2J", "fromOG", "Link"]
         }
     } """
 
@@ -133,6 +134,27 @@ def result = put("/rest/api/2/issue/${issueKey}")
     .header('Content-Type', 'application/json')
     .body(issueData)
     .asString()
+    
+if (result.status == 204) { 
+    println 'Success'
+} else {
+    println "${result.status}: ${result.body}"
+}
+
+//------------------------------------------------------------
+// Transition issue to "Waiting for Agent"
+//------------------------------------------------------------
+
+def transition = """{
+    "transition": { 
+        "id": "981"
+    }
+}"""
+
+result = post("/rest/api/2/issue/${issueKey}/transitions")
+        .header('Content-Type', 'application/json')
+        .body(transition)
+        .asString()
     
 if (result.status == 204) { 
     println 'Success'
@@ -172,15 +194,15 @@ def customerAssetId = null
 try {
     customerAssetId = serverAsset.attributes.find {it.objectTypeAttributeId == "2793"}.objectAttributeValues.referencedObject.id[0]
 } catch (Exception){
-    def clientPattern = ~/CO(.*)-/
-    def CONTOSOPattern = ~/contoso.local/
+    def clientPattern = ~/JZ(.*)-/
+    def jenzabarPattern = ~/jenzmgs.local/
     def serverName = (serverAsset.attributes.find {it.objectTypeAttributeId == "2637"}.objectAttributeValues.value[0]).toString()
     
     if (serverName =~ clientPattern) {
         def customerCode = (serverName =~ clientPattern)[0][1].toString()
         customerAssetId = insQuery("objectType = Organization AND Code = ${customerCode}").objectEntries.id[0]
-    } else if (serverName =~ CONTOSOPattern){
-        customerAssetId = insQuery("objectType = Organization AND Name = CONTOSO").objectEntries.id[0]
+    } else if (serverName =~ jenzabarPattern){
+        customerAssetId = insQuery("objectType = Organization AND Name = Jenzabar").objectEntries.id[0]
     }
 }
 
@@ -190,9 +212,9 @@ try {
 
 String bodyData = """ {
         "fields": {
-			"customfield_10078": [${assetObject(customerAssetId)}],
-			"customfield_10083": [${assetObject(serverAssetId)}],
-			"customfield_10101": [${assetObject(58158)}]
+		"customfield_10078": [${assetObject(customerAssetId)}],
+		"customfield_10083": [${assetObject(serverAssetId)}],
+		"customfield_10101": [${assetObject(58158)}]
         }
     } """
 
@@ -200,27 +222,6 @@ result = put("/rest/api/2/issue/${issueKey}")
     .header('Content-Type', 'application/json')
     .body(bodyData)
     .asString()
-    
-if (result.status == 204) { 
-    println 'Success'
-} else {
-    println "${result.status}: ${result.body}"
-}
-
-//------------------------------------------------------------
-// Transition issue to "Waiting for Agent"
-//------------------------------------------------------------
-
-def transition = """{
-    "transition": { 
-        "id": "981"
-    }
-}"""
-
-result = post("/rest/api/2/issue/${issueKey}/transitions")
-        .header('Content-Type', 'application/json')
-        .body(transition)
-        .asString()
     
 if (result.status == 204) { 
     println 'Success'
